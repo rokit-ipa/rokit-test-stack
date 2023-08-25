@@ -8,8 +8,8 @@ def generate_launch_description():
         name="rokit_calculator_node",
         output="screen",
         parameters=[
-            {"testtype": "MAX_VELOCITY"},
-            {"robottype": "MiR"},
+            {"test_name": "MAX_VELOCITY"},
+            {"robot_name": "MiR"},
             {"tracking_object": "tracker_1"},
             {"trial_number": "1"},
             {"temperature": "23.0"},
