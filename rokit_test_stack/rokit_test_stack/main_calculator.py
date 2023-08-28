@@ -2,9 +2,9 @@ import rclpy
 from rclpy.node import Node
 from vicon_receiver.msg import Position  # Make sure to replace 'your_package_name' with your actual package name
 from rokit_test_stack.calculator import velocity_calculator
-from rokit_test_stack.database import write_velocity
-from rokit_test_stack.database.database import create_test_results
-from rokit_test_stack.database.model import TestResults
+#from rokit_test_stack.database import write_velocity
+from rokit_test_stack.database import database 
+from rokit_test_stack.database import model
 import time
 START_POS = (0,0,0)
 END_POS = (0,0,0)
@@ -17,14 +17,8 @@ class ViconSubscriber(Node):
     """
     def __init__(self):
         super().__init__('vicon_subscriber')
-        self.subscription = self.create_subscription(
-            Position,
-            '/vicon/rokit_1/rokit_1',
-            self.vicon_callback,
-            10
-        )
-        self.declare_parameter('test_name', "MAX_VELOCITY")
         self.declare_parameter('robot_name', 'MiR')
+        self.declare_parameter('test_name', "")
         self.declare_parameter('tracking_object', "tracker_1")
         self.declare_parameter('trial_number', 1)        
         self.declare_parameter('temperature', 23.0)
@@ -48,7 +42,14 @@ class ViconSubscriber(Node):
         self.calculation_start_frame = 0
         self.calculation_end_frame = 0
         self.meters_per_second = 0
-    
+        self.get_logger().info(f'/vicon/{self.tracking_object}/{self.tracking_object}')
+        self.subscription = self.create_subscription(
+            Position,
+            f'/vicon/{self.tracking_object}/{self.tracking_object}',
+            self.vicon_callback,
+            10
+        )
+        
     def vicon_callback(self, msg):
         """callback function
 
@@ -59,15 +60,17 @@ class ViconSubscriber(Node):
         orientation = (msg.x_rot,msg.y_rot,msg.z_rot, msg.w)
         frame_number = msg.frame_number
         if (self.test_name == 'MAX_VELOCITY'):
+            self.get_logger().info("I am calculating max_velocity")
             self.check_velocity(translation, frame_number)   
         if (self.test_name =='MAX_VELOCITY_SLOPE'):
+            self.get_logger().info("I am calculating max_velocity_on_slope")
             self.check_velocity_on_slope(translation,frame_number)
         # Process the extracted data as needed
-        self.get_logger().info(
-            f"Received Vicon data:\n"
-            f"Tranlsation: ({translation})\n"
-            f"Frame Number: {frame_number}\n"
-        )
+        # self.get_logger().info(
+        #     f"Received Vicon data:\n"
+        #     f"Tranlsation: ({translation})\n"
+        #     f"Frame Number: {frame_number}\n"
+        # )
         
            
     def check_velocity_on_slope (self, translation, frame_number):
@@ -86,9 +89,8 @@ class ViconSubscriber(Node):
             self.calculation_end_frame = frame_number
             print("Calculating Velocity on the slope now")
             self.meters_per_second = velocity_calculator.calculate(self.calculation_start_position, self.calculation_start_frame, self.calculation_end_position, self.calculation_end_frame);
-            print(f'Meters per second calculated {self.meters_per_second}')
-            # data to be written to the database should follow the data model defined in the models
-            test_results = TestResults(
+            #data to be written to the database should follow the data model defined in the models
+            test_results = model.TestResults(
                 test_name=str(self.test_name),
                 trial_number=int(self.trial_number),
                 robot_name=str(self.robot_name),
@@ -100,8 +102,10 @@ class ViconSubscriber(Node):
                 notes=str(self.notes),
                 velocity=float(self.meters_per_second)
             )
-            create_test_results(test_results)
-
+            response = database.create_test_results(test_results)
+            self.get_logger().info(
+                "Successfully wrote Data to DB"
+            )
             self.destroy_node()
             rclpy.shutdown()
             return
@@ -123,20 +127,22 @@ class ViconSubscriber(Node):
             print("Calculating Velocity now")
             self.meters_per_second = velocity_calculator.calculate(self.calculation_start_position, self.calculation_start_frame, self.calculation_end_position, self.calculation_end_frame);
             print(f'Meters per second calculated {self.meters_per_second}')
-            create_test_results(
-                int(self.trial_number),
-                str(self.robot_name),
-                str(self.test_name),
-                float(self.temperature),
-                float(self.humidity),
-                float(self.inclination),
-                str(self.tracking_object),
-                str(self.floor_type),
-                str(self.notes),
-                float(self.meters_per_second)
+            
+            test_results = model.TestResults(
+                test_name=str(self.test_name),
+                trial_number=int(self.trial_number),
+                robot_name=str(self.robot_name),
+                tracking_object=str(self.tracking_object),
+                temperature=float(self.temperature),
+                humidity=float(self.humidity),
+                inclination=float(self.inclination),
+                floor_type=str(self.floor_type),
+                notes=str(self.notes),
+                velocity=float(self.meters_per_second)
             )
+            response = database.create_test_results(test_results)
             self.get_logger().info(
-            "Successfully wrote Data to DB"
+                "Successfully wrote Data to DB"
             )
             self.destroy_node()
             rclpy.shutdown()

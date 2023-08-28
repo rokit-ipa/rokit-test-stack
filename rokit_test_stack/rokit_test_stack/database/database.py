@@ -1,13 +1,13 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from database.model import TestResults
+from rokit_test_stack.database import model
 
 import os
-username = os.getlogin()
-db_file_path = f"/home/{username}/sql_db.db"
-DATABASE_URL = f"sqlite:///{db_file_path}"
-
+# username = "ipa326"
+# db_file_path = f"/home/{username}/sql_db.db"
+# DATABASE_URL = f"sqlite:///{db_file_path}"
+DATABASE_URL = f"sqlite:////home/ws/src/rokit-test-stack/rokit_test_stack/shared/sql_db.db"
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -31,7 +31,7 @@ class TestResultsDB(Base):
 # Create tables
 Base.metadata.create_all(bind=engine)
 
-def create_test_results(results: TestResults):
+def create_test_results(results: model.TestResults):
     db_results = TestResultsDB(**results.dict())
     db = SessionLocal()
     db.add(db_results)
