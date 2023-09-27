@@ -27,7 +27,7 @@ class writeInfluxDB():
 
     def writePoints(self, data):
         time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-        p = influxdb_client.Point("Testcase" + str(data.trial_number)).field("floor_type", data.floor_type).field("tracking_object",data.tracking_object).field("robottype", data.robottype).field("humidity", data.humidity).field("inclindation", data.inclination).field("notes", data.notes).field("temperature",data.temperature).tag("testtype", data.testtype).field("velocity_meters_per_second", data.meters_per_second).time(time)
+        p = influxdb_client.Point("Testcase" + str(data.trial_number)).field("floor_type", data.floor_type).field("tracking_object",data.tracking_object).field("robot_name", data.robot_name).field("humidity", data.humidity).field("inclindation", data.inclination).field("notes", data.notes).field("temperature",data.temperature).tag("test_name", data.test_name).field("velocity_meters_per_second", data.meters_per_second).time(time)
         self.write_api.write(bucket=self.bucket, org=self.org, record=p)
 
 
